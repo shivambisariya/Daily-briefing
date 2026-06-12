@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="DayBrief" />
+  <meta name="theme-color" content="#0A0F1E" />
+  <title>DayBrief — Your AI Morning Digest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0A0F1E;
+      --surface: #111827;
+      --surface2: #1a2235;
+      --accent: #38BDF8;
+      --accent2: #818CF8;
+      --accent3: #34D399;
+      --warn: #FBBF24;
+      --text: #F1F5F9;
+      --muted: #64748B;
+      --border: rgba(255,255,255,0.07);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-weight: 400;
+      min-height: 100dvh;
+      padding-bottom: 40px;
+    }
+
+    /* ── Header ── */
+    header {
+      padding: 52px 24px 24px;
+      background: linear-gradient(180deg, #0d1526 0%, transparent 100%);
+    }
+
+    .eyebrow {
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    h1 span { color: var(--accent); }
+
+    .date-line {
+      margin-top: 6px;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 300;
+    }
+
+    /* ── Topic Chips ── */
+    .section-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 0 24px;
+      margin-bottom: 10px;
+    }
+
+    .chips-wrap {
+      padding: 0 24px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      user-select: none;
+    }
+
+    .chip.active {
+      background: rgba(56,189,248,0.12);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .chip-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.7;
+    }
+
+    /* ── Custom Topic Input ── */
+    .add-topic-row {
+      padding: 10px 24px 24px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .topic-input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 11px 16px;
+      font-size: 14px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .topic-input:focus { border-color: var(--accent); }
+    .topic-input::placeholder { color: var(--muted); }
+
+    .add-btn {
+      background: var(--accent);
+      color: #0A0F1E;
+      border: none;
+      border-radius: 12px;
+      padding: 11px 18px;
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .add-btn:hover { opacity: 0.85; }
+
+    /* ── Generate Button ── */
+    .generate-wrap {
+      padding: 0 24px 28px;
+    }
+
+    .generate-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 17px;
+      font-family: 'Syne', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .generate-btn:active { transform: scale(0.98); }
+    .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .generate-btn .btn-shine {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%);
+      transform: translateX(-100%);
+      animation: none;
+    }
+
+    .generate-btn.loading .btn-shine {
+      animation: shine 1.4s infinite;
+    }
+
+    @keyframes shine {
+      to { transform: translateX(100%); }
+    }
+
+    /* ── Divider ── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 0 24px 24px;
+    }
+
+    /* ── Cards ── */
+    .cards-wrap {
+      padding: 0 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 18px 12px;
+    }
+
+    .card-icon {
+      width: 34px; height: 34px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .card-topic {
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      flex: 1;
+    }
+
+    .card-tag {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(56,189,248,0.12);
+      color: var(--accent);
+    }
+
+    .card-body {
+      padding: 0 18px 18px;
+      font-size: 14px;
+      line-height: 1.65;
+      color: #CBD5E1;
+    }
+
+    .card-body p { margin-bottom: 10px; }
+    .card-body p:last-child { margin-bottom: 0; }
+
+    .card-body strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .card-footer {
+      border-top: 1px solid var(--border);
+      padding: 10px 18px;
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ── Loading skeleton ── */
+    .skeleton-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      animation: fadeUp 0.3s ease both;
+    }
+
+    .skel {
+      background: linear-gradient(90deg, var(--surface2) 25%, #1f2f47 50%, var(--surface2) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+    }
+
+    @keyframes shimmer {
+      to { background-position: -200% 0; }
+    }
+
+    .skel-title { height: 14px; width: 55%; margin-bottom: 14px; }
+    .skel-line  { height: 11px; width: 100%; margin-bottom: 8px; }
+    .skel-line.short { width: 72%; }
+
+    /* ── Empty state ── */
+    .empty-state {
+      padding: 48px 24px;
+      text-align: center;
+    }
+
+    .empty-icon { font-size: 40px; margin-bottom: 14px; }
+
+    .empty-state h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .empty-state p {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ── Install banner ── */
+    .install-banner {
+      margin: 0 24px 20px;
+      background: rgba(129,140,248,0.1);
+      border: 1px solid rgba(129,140,248,0.25);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: #a5b4fc;
+    }
+
+    .install-banner span { flex: 1; line-height: 1.5; }
+    .install-banner .close-banner {
+      background: none; border: none; color: var(--muted);
+      font-size: 18px; cursor: pointer; padding: 0 4px;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="eyebrow">Your AI Morning Digest</div>
+    <h1>Day<span>Brief</span></h1>
+    <div class="date-line" id="dateDisplay"></div>
+  </header>
+
+  <!-- Install banner -->
+  <div class="install-banner" id="installBanner">
+    <span>📱 <strong>Add to Home Screen</strong> — tap your browser's Share button and choose "Add to Home Screen" for app-like access.</span>
+    <button class="close-banner" onclick="document.getElementById('installBanner').remove()">×</button>
+  </div>
+
+  <!-- Topic selector -->
+  <div class="section-label">Pick your topics</div>
+  <div class="chips-wrap" id="chipsWrap"></div>
+  <div class="add-topic-row">
+    <input class="topic-input" id="customTopic" placeholder="Add custom topic…" maxlength="40" />
+    <button class="add-btn" onclick="addCustomTopic()">+ Add</button>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- Generate -->
+  <div class="generate-wrap">
+    <button class="generate-btn" id="generateBtn" onclick="generateBriefing()">
+      <div class="btn-shine"></div>
+      ✦ Generate My Briefing
+    </button>
+  </div>
+
+  <!-- Results -->
+  <div id="results"></div>
+
+  <script>
+    // ── Date ──
+    const dateEl = document.getElementById('dateDisplay');
+    dateEl.textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+    // ── Default topics ──
+    const DEFAULT_TOPICS = [
+      { label: 'US Stocks',    icon: '📈', color: '#34D399' },
+      { label: 'SpaceX IPO',   icon: '🚀', color: '#38BDF8' },
+      { label: 'AI & Tech',    icon: '🤖', color: '#818CF8' },
+      { label: 'Canada News',  icon: '🍁', color: '#F87171' },
+      { label: 'Crypto',       icon: '₿',  color: '#FBBF24' },
+      { label: 'IBM / AS400',  icon: '💾', color: '#A78BFA' },
+    ];
+
+    let topics = [...DEFAULT_TOPICS];
+    let active = new Set(['US Stocks', 'SpaceX IPO', 'AI & Tech']);
+
+    function renderChips() {
+      const wrap = document.getElementById('chipsWrap');
+      wrap.innerHTML = '';
+      topics.forEach(t => {
+        const chip = document.createElement('div');
+        chip.className = 'chip' + (active.has(t.label) ? ' active' : '');
+        chip.innerHTML = `<span>${t.icon}</span> ${t.label}`;
+        chip.onclick = () => {
+          if (active.has(t.label)) active.delete(t.label);
+          else active.add(t.label);
+          renderChips();
+        };
+        wrap.appendChild(chip);
+      });
+    }
+
+    function addCustomTopic() {
+      const input = document.getElementById('customTopic');
+      const val = input.value.trim();
+      if (!val) return;
+      if (!topics.find(t => t.label.toLowerCase() === val.toLowerCase())) {
+        topics.push({ label: val, icon: '🔍', color: '#38BDF8' });
+      }
+      active.add(val);
+      input.value = '';
+      renderChips();
+    }
+
+    document.getElementById('customTopic').addEventListener('keydown', e => {
+      if (e.key === 'Enter') addCustomTopic();
+    });
+
+    renderChips();
+
+    // ── Generate ──
+    async function generateBriefing() {
+      const selected = [...active];
+      if (!selected.length) {
+        alert('Please select at least one topic.');
+        return;
+      }
+
+      const btn = document.getElementById('generateBtn');
+      btn.disabled = true;
+      btn.classList.add('loading');
+      btn.textContent = '';
+      btn.innerHTML = '<div class="btn-shine"></div> Generating your briefing…';
+
+      const results = document.getElementById('results');
+      results.innerHTML = '';
+
+      // Show skeletons
+      selected.forEach(() => {
+        const sk = document.createElement('div');
+        sk.className = 'cards-wrap';
+        sk.style.marginBottom = '0';
+        sk.innerHTML = `<div class="skeleton-card">
+          <div class="skel skel-title"></div>
+          <div class="skel skel-line"></div>
+          <div class="skel skel-line"></div>
+          <div class="skel skel-line short"></div>
+        </div>`;
+        results.appendChild(sk);
+      });
+
+      const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+      const prompt = `You are a sharp, concise AI briefing assistant. Today is ${today}.
+
+The user wants a morning briefing on these topics: ${selected.join(', ')}.
+
+For EACH topic, provide a focused briefing with:
+- 2-3 key points or developments (recent/current)
+- 1 "watch out for" or forward-looking insight
+- Keep each topic briefing to ~80-100 words max
+
+Return ONLY a JSON array (no markdown, no backticks), like this:
+[
+  {
+    "topic": "US Stocks",
+    "icon": "📈",
+    "color": "#34D399",
+    "tag": "Markets",
+    "summary": "Full briefing text here as plain text paragraphs separated by \\n\\n",
+    "footer": "Short 1-line source note or timing context"
+  }
+]
+
+Be direct, factual, and useful. No filler. Mention real tickers, events, or names where relevant.`;
+
+      try {
+        const resp = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-6',
+            max_tokens: 1000,
+            tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+
+        const data = await resp.json();
+
+        // Extract text from all content blocks
+        const fullText = data.content
+          .map(b => b.type === 'text' ? b.text : '')
+          .filter(Boolean)
+          .join('\n');
+
+        // Parse JSON
+        const clean = fullText.replace(/```json|```/g, '').trim();
+        const jsonMatch = clean.match(/\[[\s\S]*\]/);
+        if (!jsonMatch) throw new Error('No JSON array found');
+        const cards = JSON.parse(jsonMatch[0]);
+
+        // Render cards
+        results.innerHTML = '';
+        const wrap = document.createElement('div');
+        wrap.className = 'cards-wrap';
+
+        cards.forEach((c, i) => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.style.animationDelay = `${i * 0.08}s`;
+
+          const paragraphs = (c.summary || '').split('\n\n').filter(Boolean)
+            .map(p => `<p>${p.replace(/\n/g, '<br/>')}</p>`).join('');
+
+          card.innerHTML = `
+            <div class="card-header">
+              <div class="card-icon" style="background: ${c.color}22; color: ${c.color}; font-size:18px;">${c.icon}</div>
+              <div class="card-topic">${c.topic}</div>
+              <div class="card-tag">${c.tag || 'Briefing'}</div>
+            </div>
+            <div class="card-body">${paragraphs}</div>
+            <div class="card-footer">🕐 ${c.footer || 'AI-generated briefing · ' + today}</div>
+          `;
+          wrap.appendChild(card);
+        });
+
+        results.appendChild(wrap);
+
+      } catch (err) {
+        results.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">⚠️</div>
+            <h3>Something went wrong</h3>
+            <p>${err.message || 'Could not generate briefing. Try again.'}</p>
+          </div>`;
+      }
+
+      btn.disabled = false;
+      btn.classList.remove('loading');
+      btn.innerHTML = '<div class="btn-shine"></div> ✦ Refresh Briefing';
+    }
+  </script>
+</body>
+</html>
